@@ -100,9 +100,8 @@ CREATE TABLE Ticket(
 CREATE TABLE Transportation_Vehicle(
   Vehicle_Id            INTEGER       NOT NULL,
   Registration_Number   INTEGER       NOT NULL,
-  Company_Name          VARCHAR(100)  NOT NULL,
   Medium_Type           VARCHAR(20)   NOT NULL,
-  CONSTRAINT Vehicle_Reg_PK PRIMARY KEY ( Vehicle_Id, Registration_Number )
+  CONSTRAINT Vehicle_Reg_PK PRIMARY KEY ( Vehicle_Id)
 );
 
 
@@ -140,22 +139,19 @@ CREATE TABLE Travel_Amount(
 
 CREATE TABLE Water(
   Vehicle_Id            INTEGER   NOT NULL,
-  Registration_Number   INTEGER   NOT NULL,
-  CONSTRAINT Water_Vehicle_Reg_PK PRIMARY KEY ( Vehicle_Id, Registration_Number )
+  CONSTRAINT Water_Vehicle_Reg_PK PRIMARY KEY ( Vehicle_Id)
 );
 
 
 CREATE TABLE Road(
   Vehicle_Id            INTEGER   NOT NULL,
-  Registration_Number   INTEGER   NOT NULL,
-  CONSTRAINT Road_Vehicle_Reg_PK PRIMARY KEY ( Vehicle_Id, Registration_Number )
+  CONSTRAINT Road_Vehicle_Reg_PK PRIMARY KEY ( Vehicle_Id)
 );
 
 
 CREATE TABLE Air(
   Vehicle_Id            INTEGER   NOT NULL,
-  Registration_Number   INTEGER   NOT NULL,
-  CONSTRAINT Air_Vehicle_Reg_PK PRIMARY KEY ( Vehicle_Id, Registration_Number )
+  CONSTRAINT Air_Vehicle_Reg_PK PRIMARY KEY ( Vehicle_Id)
 );
 
 
@@ -338,12 +334,21 @@ for their vehicles */
 CREATE OR REPLACE PROCEDURE Company_Tolls_Pay (
   Comp_Name IN VARCHAR2
 ) AS
-    names       Tolls.Name%type;
+    name        Tolls.Name%type;
+
+    CURSOR TollNames is
+    SELECT T.Name 
+    FROM Registration_Details D, Route_Buildings B, Buildings_Structures S, Tolls T
+    WHERE D.Company_Name = Comp_Name AND D.Route_Id = B.Route_Id
+    AND B.Name = S.Name AND S.Name = T.Name;
 BEGIN
-  SELECT T.Name INTO names
-  FROM Registration_Details D, Route_Buildings B, Buildings_Structures S, Tolls T
-  WHERE D.Company_Name = Comp_Name AND D.Route_Id = B.Route_Id
-  AND B.Name = S.Name AND S.Name = T.Name;
+  OPEN TollNames;
+  LOOP
+    FETCH StopNames INTO name;
+    EXIT WHEN (TollNames%NOTFOUND);
+    dbms_output.put_line(name);
+  END LOOP;
+  CLOSE TollNames;
 END Company_Tolls_Pay;
 
 /*This procedure would take vehicle ID in its argument and find all the stop names the vehicle would stop at.
@@ -354,11 +359,20 @@ CREATE OR REPLACE PROCEDURE Vehicle_Stops (
   VID IN INTEGER
 ) AS
     stops       Route_Stops.Stop_Name%type;
+
+    CURSOR StopNames is
+    SELECT S.Stop_Name 
+    FROM Transportation_Vehicle V, Registration_Details D, Route R, Route_Stops S
+    WHERE V.Vehicle_Id = VID AND V.Registration_Number = D.Registration_Number
+    AND D.Route_Id = R.Route_Id AND R.Route_Id = S.Route_Id;
 BEGIN
-  SELECT S.Stop_Name INTO stops
-  FROM Transportation_Vehicle V, Registration_Details D, Route R, Route_Stops S
-  WHERE V.Vehicle_Id = VID AND V.Registration_Number = D.Registration_Number
-  AND D.Route_Id = R.Route_Id AND R.Route_Id = S.Route_Id;
+  OPEN StopNames;
+  LOOP
+    FETCH StopNames INTO stops;
+    EXIT WHEN (StopNames%NOTFOUND);
+    dbms_output.put_line(stops);
+  END LOOP;
+  CLOSE StopNames;
 END Vehicle_Stops;
 
 
